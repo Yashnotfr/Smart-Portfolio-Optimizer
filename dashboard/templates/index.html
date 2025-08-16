@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Portfolio Optimizer</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Plotly.js -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .navbar-brand {
+            font-weight: bold;
+            color: #2c3e50 !important;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px 15px 0 0 !important;
+            font-weight: bold;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 25px;
+            padding: 10px 25px;
+            font-weight: 500;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .form-control, .form-select {
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+            padding: 12px 15px;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        
+        .metric-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 15px;
+        }
+        
+        .metric-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .metric-label {
+            color: #6c757d;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .positive { color: #28a745; }
+        .negative { color: #dc3545; }
+        .neutral { color: #6c757d; }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+        }
+        
+        .chart-container {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .alert {
+            border-radius: 10px;
+            border: none;
+        }
+        
+        .nav-tabs {
+            border-bottom: 2px solid #e9ecef;
+        }
+        
+        .nav-tabs .nav-link {
+            border: none;
+            border-radius: 10px 10px 0 0;
+            color: #6c757d;
+            font-weight: 500;
+        }
+        
+        .nav-tabs .nav-link.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+        }
+        
+        .symbol-tag {
+            display: inline-block;
+            background: #e9ecef;
+            padding: 5px 10px;
+            border-radius: 15px;
+            margin: 2px;
+            font-size: 0.9rem;
+        }
+        
+        .symbol-tag .remove {
+            margin-left: 5px;
+            cursor: pointer;
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-chart-line me-2"></i>
+                Smart Portfolio Optimizer
+            </a>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Modern Portfolio Theory Implementation
+                </span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <!-- Control Panel -->
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-cogs me-2"></i>
+                        Portfolio Configuration
+                    </div>
+                    <div class="card-body">
+                        <form id="optimizationForm">
+                            <!-- Asset Selection -->
+                            <div class="mb-3">
+                                <label class="form-label">Assets</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="symbolInput" 
+                                           placeholder="Enter symbol (e.g., AAPL)">
+                                    <button class="btn btn-outline-secondary" type="button" id="addSymbol">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                                <div id="selectedSymbols" class="mt-2"></div>
+                                <small class="text-muted">Popular symbols: AAPL, GOOGL, MSFT, TSLA, AMZN, META</small>
+                            </div>
+
+                            <!-- Optimization Method -->
+                            <div class="mb-3">
+                                <label class="form-label">Optimization Method</label>
+                                <select class="form-select" id="optimizationMethod">
+                                    <option value="markowitz">Markowitz Mean-Variance</option>
+                                    <option value="max_sharpe">Maximum Sharpe Ratio</option>
+                                    <option value="min_variance">Minimum Variance</option>
+                                    <option value="risk_parity">Risk Parity</option>
+                                </select>
+                            </div>
+
+                            <!-- Target Return (for Markowitz) -->
+                            <div class="mb-3" id="targetReturnGroup" style="display: none;">
+                                <label class="form-label">Target Annual Return (%)</label>
+                                <input type="number" class="form-control" id="targetReturn" 
+                                       step="0.1" min="0" max="50" placeholder="12.0">
+                            </div>
+
+                            <!-- Risk-Free Rate -->
+                            <div class="mb-3">
+                                <label class="form-label">Risk-Free Rate (%)</label>
+                                <input type="number" class="form-control" id="riskFreeRate" 
+                                       value="2.0" step="0.1" min="0" max="10">
+                            </div>
+
+                            <!-- Date Range -->
+                            <div class="mb-3">
+                                <label class="form-label">Date Range</label>
+                                <div class="row">
+                                    <div class="col-6">
+                                        <input type="date" class="form-control" id="startDate">
+                                    </div>
+                                    <div class="col-6">
+                                        <input type="date" class="form-control" id="endDate">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-rocket me-2"></i>
+                                    Optimize Portfolio
+                                </button>
+                                <button type="button" class="btn btn-outline-primary" id="compareMethods">
+                                    <i class="fas fa-balance-scale me-2"></i>
+                                    Compare Methods
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" id="checkDataQuality">
+                                    <i class="fas fa-database me-2"></i>
+                                    Check Data Quality
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-tools me-2"></i>
+                        Quick Actions
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-outline-success" id="saveOptimization">
+                                <i class="fas fa-save me-2"></i>
+                                Save Optimization
+                            </button>
+                            <button class="btn btn-outline-info" id="exportResults">
+                                <i class="fas fa-download me-2"></i>
+                                Export Results
+                            </button>
+                            <button class="btn btn-outline-warning" id="showHistory">
+                                <i class="fas fa-history me-2"></i>
+                                View History
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Panel -->
+            <div class="col-lg-8">
+                <!-- Loading Indicator -->
+                <div class="loading" id="loadingIndicator">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-3">Optimizing portfolio...</p>
+                </div>
+
+                <!-- Results Content -->
+                <div id="resultsContent" style="display: none;">
+                    <!-- Key Metrics -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="metric-card">
+                                <div class="metric-value" id="expectedReturn">-</div>
+                                <div class="metric-label">Expected Return</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="metric-card">
+                                <div class="metric-value" id="volatility">-</div>
+                                <div class="metric-label">Volatility</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="metric-card">
+                                <div class="metric-value" id="sharpeRatio">-</div>
+                                <div class="metric-label">Sharpe Ratio</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="metric-card">
+                                <div class="metric-value" id="maxDrawdown">-</div>
+                                <div class="metric-label">Max Drawdown</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Charts Tabs -->
+                    <div class="card">
+                        <div class="card-header">
+                            <ul class="nav nav-tabs card-header-tabs" id="chartTabs" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="frontier-tab" data-bs-toggle="tab" 
+                                            data-bs-target="#frontier" type="button" role="tab">
+                                        <i class="fas fa-chart-line me-2"></i>Efficient Frontier
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="weights-tab" data-bs-toggle="tab" 
+                                            data-bs-target="#weights" type="button" role="tab">
+                                        <i class="fas fa-pie-chart me-2"></i>Portfolio Weights
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="correlation-tab" data-bs-toggle="tab" 
+                                            data-bs-target="#correlation" type="button" role="tab">
+                                        <i class="fas fa-th me-2"></i>Correlation Matrix
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="performance-tab" data-bs-toggle="tab" 
+                                            data-bs-target="#performance" type="button" role="tab">
+                                        <i class="fas fa-chart-area me-2"></i>Performance
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="risk-tab" data-bs-toggle="tab" 
+                                            data-bs-target="#risk" type="button" role="tab">
+                                        <i class="fas fa-shield-alt me-2"></i>Risk Metrics
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="card-body">
+                            <div class="tab-content" id="chartTabContent">
+                                <div class="tab-pane fade show active" id="frontier" role="tabpanel">
+                                    <div id="efficientFrontierChart" class="chart-container"></div>
+                                </div>
+                                <div class="tab-pane fade" id="weights" role="tabpanel">
+                                    <div id="weightsChart" class="chart-container"></div>
+                                </div>
+                                <div class="tab-pane fade" id="correlation" role="tabpanel">
+                                    <div id="correlationChart" class="chart-container"></div>
+                                </div>
+                                <div class="tab-pane fade" id="performance" role="tabpanel">
+                                    <div id="performanceChart" class="chart-container"></div>
+                                    <div id="drawdownChart" class="chart-container"></div>
+                                </div>
+                                <div class="tab-pane fade" id="risk" role="tabpanel">
+                                    <div id="riskDashboard" class="chart-container"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Welcome Message -->
+                <div id="welcomeMessage" class="text-center py-5">
+                    <i class="fas fa-chart-line fa-5x text-muted mb-4"></i>
+                    <h3 class="text-muted">Welcome to Smart Portfolio Optimizer</h3>
+                    <p class="text-muted">Configure your portfolio parameters and click "Optimize Portfolio" to get started.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <!-- Save Optimization Modal -->
+    <div class="modal fade" id="saveModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Save Optimization</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Optimization Name</label>
+                        <input type="text" class="form-control" id="optimizationName" 
+                               placeholder="Enter a name for this optimization">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="confirmSave">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- History Modal -->
+    <div class="modal fade" id="historyModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Optimization History</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="historyContent"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JavaScript -->
+    <script>
+        // Global variables
+        let selectedSymbols = ['AAPL', 'GOOGL', 'MSFT', 'TSLA'];
+        let currentResults = null;
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            initializePage();
+            setupEventListeners();
+            updateSelectedSymbols();
+            setDefaultDates();
+        });
+
+        function initializePage() {
+            // Set default dates (1 year ago to today)
+            const today = new Date();
+            const oneYearAgo = new Date(today.getFullYear() - 1, today.getMonth(), today.getDate());
+            
+            document.getElementById('endDate').value = today.toISOString().split('T')[0];
+            document.getElementById('startDate').value = oneYearAgo.toISOString().split('T')[0];
+        }
+
+        function setupEventListeners() {
+            // Form submission
+            document.getElementById('optimizationForm').addEventListener('submit', handleOptimization);
+            
+            // Symbol management
+            document.getElementById('addSymbol').addEventListener('click', addSymbol);
+            document.getElementById('symbolInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addSymbol();
+                }
+            });
+
+            // Method change
+            document.getElementById('optimizationMethod').addEventListener('change', toggleTargetReturn);
+
+            // Quick actions
+            document.getElementById('compareMethods').addEventListener('click', compareMethods);
+            document.getElementById('checkDataQuality').addEventListener('click', checkDataQuality);
+            document.getElementById('saveOptimization').addEventListener('click', showSaveModal);
+            document.getElementById('exportResults').addEventListener('click', exportResults);
+            document.getElementById('showHistory').addEventListener('click', showHistory);
+            document.getElementById('confirmSave').addEventListener('click', saveOptimization);
+        }
+
+        function addSymbol() {
+            const input = document.getElementById('symbolInput');
+            const symbol = input.value.trim().toUpperCase();
+            
+            if (symbol && !selectedSymbols.includes(symbol)) {
+                selectedSymbols.push(symbol);
+                updateSelectedSymbols();
+                input.value = '';
+            }
+        }
+
+        function removeSymbol(symbol) {
+            selectedSymbols = selectedSymbols.filter(s => s !== symbol);
+            updateSelectedSymbols();
+        }
+
+        function updateSelectedSymbols() {
+            const container = document.getElementById('selectedSymbols');
+            container.innerHTML = selectedSymbols.map(symbol => 
+                `<span class="symbol-tag">${symbol}<span class="remove" onclick="removeSymbol('${symbol}')">&times;</span></span>`
+            ).join('');
+        }
+
+        function toggleTargetReturn() {
+            const method = document.getElementById('optimizationMethod').value;
+            const targetReturnGroup = document.getElementById('targetReturnGroup');
+            
+            if (method === 'markowitz') {
+                targetReturnGroup.style.display = 'block';
+            } else {
+                targetReturnGroup.style.display = 'none';
+            }
+        }
+
+        function setDefaultDates() {
+            const today = new Date();
+            const oneYearAgo = new Date(today.getFullYear() - 1, today.getMonth(), today.getDate());
+            
+            document.getElementById('endDate').value = today.toISOString().split('T')[0];
+            document.getElementById('startDate').value = oneYearAgo.toISOString().split('T')[0];
+        }
+
+        async function handleOptimization(e) {
+            e.preventDefault();
+            
+            if (selectedSymbols.length === 0) {
+                showAlert('Please select at least one asset.', 'warning');
+                return;
+            }
+
+            showLoading(true);
+
+            const formData = {
+                symbols: selectedSymbols,
+                method: document.getElementById('optimizationMethod').value,
+                risk_free_rate: parseFloat(document.getElementById('riskFreeRate').value) / 100,
+                start_date: document.getElementById('startDate').value,
+                end_date: document.getElementById('endDate').value
+            };
+
+            // Add target return if using Markowitz method
+            if (formData.method === 'markowitz') {
+                const targetReturn = document.getElementById('targetReturn').value;
+                if (targetReturn) {
+                    formData.target_return = parseFloat(targetReturn) / 100;
+                }
+            }
+
+            try {
+                const response = await fetch('/optimize', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    currentResults = data.result;
+                    displayResults(data);
+                    showAlert('Portfolio optimized successfully!', 'success');
+                } else {
+                    showAlert(`Optimization failed: ${data.error}`, 'danger');
+                }
+            } catch (error) {
+                showAlert(`Error: ${error.message}`, 'danger');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function displayResults(data) {
+            // Update metrics
+            document.getElementById('expectedReturn').textContent = 
+                `${(data.result.expected_return * 100).toFixed(2)}%`;
+            document.getElementById('volatility').textContent = 
+                `${(data.result.volatility * 100).toFixed(2)}%`;
+            document.getElementById('sharpeRatio').textContent = 
+                data.result.sharpe_ratio.toFixed(3);
+            document.getElementById('maxDrawdown').textContent = 
+                `${(Math.abs(data.result.max_drawdown) * 100).toFixed(2)}%`;
+
+            // Display charts
+            Plotly.newPlot('efficientFrontierChart', JSON.parse(data.plots.efficient_frontier));
+            Plotly.newPlot('weightsChart', JSON.parse(data.plots.weights));
+            Plotly.newPlot('correlationChart', JSON.parse(data.plots.correlation));
+            Plotly.newPlot('performanceChart', JSON.parse(data.plots.performance));
+            Plotly.newPlot('drawdownChart', JSON.parse(data.plots.drawdown));
+            Plotly.newPlot('riskDashboard', JSON.parse(data.plots.risk_dashboard));
+
+            // Show results
+            document.getElementById('welcomeMessage').style.display = 'none';
+            document.getElementById('resultsContent').style.display = 'block';
+        }
+
+        async function compareMethods() {
+            if (selectedSymbols.length === 0) {
+                showAlert('Please select at least one asset.', 'warning');
+                return;
+            }
+
+            showLoading(true);
+
+            const formData = {
+                symbols: selectedSymbols,
+                risk_free_rate: parseFloat(document.getElementById('riskFreeRate').value) / 100
+            };
+
+            try {
+                const response = await fetch('/compare_methods', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Create comparison chart
+                    Plotly.newPlot('efficientFrontierChart', JSON.parse(data.comparison_plot));
+                    
+                    // Show results
+                    document.getElementById('welcomeMessage').style.display = 'none';
+                    document.getElementById('resultsContent').style.display = 'block';
+                    
+                    showAlert('Methods compared successfully!', 'success');
+                } else {
+                    showAlert(`Comparison failed: ${data.error}`, 'danger');
+                }
+            } catch (error) {
+                showAlert(`Error: ${error.message}`, 'danger');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function checkDataQuality() {
+            if (selectedSymbols.length === 0) {
+                showAlert('Please select at least one asset.', 'warning');
+                return;
+            }
+
+            showLoading(true);
+
+            const formData = {
+                symbols: selectedSymbols
+            };
+
+            try {
+                const response = await fetch('/data_quality', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    const metrics = data.quality_metrics;
+                    showAlert(`Data Quality: ${metrics.status}. Observations: ${metrics.total_observations}, Missing: ${metrics.missing_percentage.toFixed(2)}%`, 
+                             metrics.status === 'Excellent' ? 'success' : 
+                             metrics.status === 'Good' ? 'warning' : 'danger');
+                } else {
+                    showAlert(`Data quality check failed: ${data.error}`, 'danger');
+                }
+            } catch (error) {
+                showAlert(`Error: ${error.message}`, 'danger');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function showSaveModal() {
+            if (!currentResults) {
+                showAlert('No optimization results to save.', 'warning');
+                return;
+            }
+            
+            const modal = new bootstrap.Modal(document.getElementById('saveModal'));
+            modal.show();
+        }
+
+        async function saveOptimization() {
+            const name = document.getElementById('optimizationName').value || 
+                        `Optimization_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}`;
+
+            try {
+                const response = await fetch('/save_optimization', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ name: name })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showAlert(data.message, 'success');
+                    bootstrap.Modal.getInstance(document.getElementById('saveModal')).hide();
+                } else {
+                    showAlert(`Save failed: ${data.error}`, 'danger');
+                }
+            } catch (error) {
+                showAlert(`Error: ${error.message}`, 'danger');
+            }
+        }
+
+        async function exportResults() {
+            if (!currentResults) {
+                showAlert('No optimization results to export.', 'warning');
+                return;
+            }
+
+            try {
+                const response = await fetch('/export_results', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ format: 'csv' })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Create download link
+                    const blob = new Blob([data.data], { type: 'text/csv' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = data.filename;
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    
+                    showAlert('Results exported successfully!', 'success');
+                } else {
+                    showAlert(`Export failed: ${data.error}`, 'danger');
+                }
+            } catch (error) {
+                showAlert(`Error: ${error.message}`, 'danger');
+            }
+        }
+
+        async function showHistory() {
+            try {
+                const response = await fetch('/get_optimization_history');
+                const data = await response.json();
+
+                if (data.success) {
+                    const historyContent = document.getElementById('historyContent');
+                    
+                    if (data.history.length === 0) {
+                        historyContent.innerHTML = '<p class="text-muted">No saved optimizations found.</p>';
+                    } else {
+                        const historyHtml = data.history.map(item => `
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <h6 class="card-title">${item.name}</h6>
+                                    <p class="card-text">
+                                        <small class="text-muted">${new Date(item.timestamp).toLocaleString()}</small><br>
+                                        <strong>Method:</strong> ${item.method}<br>
+                                        <strong>Assets:</strong> ${item.symbols.join(', ')}<br>
+                                        <strong>Expected Return:</strong> ${(item.result.expected_return * 100).toFixed(2)}%<br>
+                                        <strong>Volatility:</strong> ${(item.result.volatility * 100).toFixed(2)}%<br>
+                                        <strong>Sharpe Ratio:</strong> ${item.result.sharpe_ratio.toFixed(3)}
+                                    </p>
+                                </div>
+                            </div>
+                        `).join('');
+                        
+                        historyContent.innerHTML = historyHtml;
+                    }
+                    
+                    const modal = new bootstrap.Modal(document.getElementById('historyModal'));
+                    modal.show();
+                } else {
+                    showAlert('Failed to load history.', 'danger');
+                }
+            } catch (error) {
+                showAlert(`Error: ${error.message}`, 'danger');
+            }
+        }
+
+        function showLoading(show) {
+            const loading = document.getElementById('loadingIndicator');
+            const results = document.getElementById('resultsContent');
+            const welcome = document.getElementById('welcomeMessage');
+            
+            if (show) {
+                loading.style.display = 'block';
+                results.style.display = 'none';
+                welcome.style.display = 'none';
+            } else {
+                loading.style.display = 'none';
+            }
+        }
+
+        function showAlert(message, type) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            document.querySelector('.container-fluid').insertBefore(alertDiv, document.querySelector('.row'));
+            
+            // Auto-dismiss after 5 seconds
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.remove();
+                }
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
