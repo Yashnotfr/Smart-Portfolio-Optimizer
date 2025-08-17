@@ -17,7 +17,7 @@ import seaborn as sns
 def create_efficient_frontier_plot(efficient_frontier_data: Dict, 
                                  individual_assets: pd.DataFrame = None) -> go.Figure:
     """
-    Create interactive efficient frontier plot.
+    Create interactive efficient frontier plot with modern styling.
     
     Args:
         efficient_frontier_data: Dictionary with efficient frontier data
@@ -28,14 +28,26 @@ def create_efficient_frontier_plot(efficient_frontier_data: Dict,
     """
     fig = go.Figure()
     
-    # Add efficient frontier
+    # Add efficient frontier with gradient colors
     fig.add_trace(go.Scatter(
         x=efficient_frontier_data['volatilities'],
         y=efficient_frontier_data['returns'],
         mode='lines+markers',
         name='Efficient Frontier',
-        line=dict(color='blue', width=2),
-        marker=dict(size=6, color='blue'),
+        line=dict(color='#6366f1', width=3),
+        marker=dict(
+            size=8, 
+            color=efficient_frontier_data['returns'],
+            colorscale='Viridis',
+            showscale=True,
+            colorbar=dict(
+                title='Return',
+                titlefont=dict(color='white'),
+                tickfont=dict(color='white'),
+                outlinewidth=0,
+                bgcolor='rgba(0,0,0,0)'
+            )
+        ),
         hovertemplate='<b>Volatility:</b> %{x:.3f}<br>' +
                      '<b>Return:</b> %{y:.3f}<br>' +
                      '<extra></extra>'
@@ -48,24 +60,55 @@ def create_efficient_frontier_plot(efficient_frontier_data: Dict,
             y=individual_assets['return'],
             mode='markers+text',
             name='Individual Assets',
-            marker=dict(size=10, color='red', symbol='diamond'),
+            marker=dict(
+                size=12, 
+                color='#ef4444', 
+                symbol='diamond',
+                line=dict(color='white', width=2)
+            ),
             text=individual_assets.index,
             textposition='top center',
+            textfont=dict(color='white', size=12),
             hovertemplate='<b>Asset:</b> %{text}<br>' +
                          '<b>Volatility:</b> %{x:.3f}<br>' +
                          '<b>Return:</b> %{y:.3f}<br>' +
                          '<extra></extra>'
         ))
     
-    # Update layout
+    # Update layout with dark theme
     fig.update_layout(
-        title='Efficient Frontier',
-        xaxis_title='Portfolio Volatility (Annualized)',
-        yaxis_title='Expected Return (Annualized)',
-        hovermode='closest',
-        template='plotly_white',
+        title=dict(
+            text='Efficient Frontier',
+            font=dict(size=20, color='white'),
+            x=0.5,
+            xanchor='center'
+        ),
+        xaxis=dict(
+            title='Portfolio Volatility (Annualized)',
+            titlefont=dict(color='white'),
+            tickfont=dict(color='white'),
+            gridcolor='rgba(255,255,255,0.1)',
+            zerolinecolor='rgba(255,255,255,0.2)'
+        ),
+        yaxis=dict(
+            title='Expected Return (Annualized)',
+            titlefont=dict(color='white'),
+            tickfont=dict(color='white'),
+            gridcolor='rgba(255,255,255,0.1)',
+            zerolinecolor='rgba(255,255,255,0.2)'
+        ),
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='white'),
+        margin=dict(l=80, r=80, t=80, b=80),
         width=800,
-        height=600
+        height=600,
+        hovermode='closest',
+        legend=dict(
+            font=dict(color='white'),
+            bgcolor='rgba(0,0,0,0)',
+            bordercolor='rgba(255,255,255,0.2)'
+        )
     )
     
     return fig
@@ -73,7 +116,7 @@ def create_efficient_frontier_plot(efficient_frontier_data: Dict,
 def create_portfolio_weights_chart(weights: Dict[str, float], 
                                  title: str = 'Portfolio Weights') -> go.Figure:
     """
-    Create portfolio weights bar chart.
+    Create portfolio weights bar chart with modern styling.
     
     Args:
         weights: Dictionary of asset weights
@@ -86,38 +129,75 @@ def create_portfolio_weights_chart(weights: Dict[str, float],
     df = pd.DataFrame(list(weights.items()), columns=['Asset', 'Weight'])
     df = df.sort_values('Weight', ascending=True)
     
+    # Create a modern color palette
+    colors = ['#6366f1', '#8b5cf6', '#ec4899', '#ef4444', '#f97316', 
+              '#eab308', '#84cc16', '#22c55e', '#14b8a6', '#06b6d4']
+    
     fig = go.Figure()
     
+    # Create horizontal bar chart with gradient colors
     fig.add_trace(go.Bar(
         x=df['Weight'],
         y=df['Asset'],
         orientation='h',
         marker=dict(
             color=df['Weight'],
-            colorscale='Blues',
+            colorscale='Viridis',
             showscale=True,
-            colorbar=dict(title='Weight')
+            colorbar=dict(
+                title='Weight',
+                titlefont=dict(color='white'),
+                tickfont=dict(color='white'),
+                outlinewidth=0,
+                bgcolor='rgba(0,0,0,0)'
+            ),
+            line=dict(width=0)
         ),
-        hovertemplate='<b>Asset:</b> %{y}<br>' +
-                     '<b>Weight:</b> %{x:.3f}<br>' +
-                     '<extra></extra>'
+        hovertemplate='<b>%{y}</b><br>' +
+                     '<b>Weight:</b> %{x:.1%}<br>' +
+                     '<extra></extra>',
+        text=[f'{w:.1%}' for w in df['Weight']],
+        textposition='auto',
+        textfont=dict(color='white', size=12)
     ))
     
+    # Update layout with dark theme
     fig.update_layout(
-        title=title,
-        xaxis_title='Weight',
-        yaxis_title='Asset',
-        template='plotly_white',
+        title=dict(
+            text=title,
+            font=dict(size=20, color='white'),
+            x=0.5,
+            xanchor='center'
+        ),
+        xaxis=dict(
+            title='Portfolio Weight',
+            titlefont=dict(color='white'),
+            tickfont=dict(color='white'),
+            gridcolor='rgba(255,255,255,0.1)',
+            zerolinecolor='rgba(255,255,255,0.2)',
+            range=[0, max(weights.values()) * 1.1]
+        ),
+        yaxis=dict(
+            title='Assets',
+            titlefont=dict(color='white'),
+            tickfont=dict(color='white'),
+            gridcolor='rgba(255,255,255,0.1)',
+            zerolinecolor='rgba(255,255,255,0.2)'
+        ),
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='white'),
+        margin=dict(l=80, r=80, t=80, b=80),
         width=800,
         height=400,
-        xaxis=dict(range=[0, max(weights.values()) * 1.1])
+        showlegend=False
     )
     
     return fig
 
 def create_correlation_heatmap(correlation_matrix: pd.DataFrame) -> go.Figure:
     """
-    Create correlation matrix heatmap.
+    Create correlation matrix heatmap with modern styling.
     
     Args:
         correlation_matrix: Correlation matrix DataFrame
@@ -125,21 +205,66 @@ def create_correlation_heatmap(correlation_matrix: pd.DataFrame) -> go.Figure:
     Returns:
         Plotly figure object
     """
+    # Create custom colorscale for better visualization
+    colorscale = [
+        [0, '#1f2937'],      # Dark gray for negative correlations
+        [0.25, '#374151'],   # Medium gray
+        [0.5, '#6b7280'],    # Neutral gray
+        [0.75, '#d1d5db'],   # Light gray
+        [1, '#ffffff']       # White for positive correlations
+    ]
+    
     fig = go.Figure(data=go.Heatmap(
         z=correlation_matrix.values,
         x=correlation_matrix.columns,
         y=correlation_matrix.index,
-        colorscale='RdBu',
+        colorscale=colorscale,
         zmid=0,
-        colorbar=dict(title='Correlation'),
-        hovertemplate='<b>Assets:</b> %{y} vs %{x}<br>' +
+        colorbar=dict(
+            title='Correlation',
+            titlefont=dict(color='white'),
+            tickfont=dict(color='white'),
+            outlinewidth=0,
+            bgcolor='rgba(0,0,0,0)',
+            len=0.8
+        ),
+        hovertemplate='<b>%{y} vs %{x}</b><br>' +
                      '<b>Correlation:</b> %{z:.3f}<br>' +
-                     '<extra></extra>'
+                     '<extra></extra>',
+        text=correlation_matrix.round(3).values,
+        texttemplate='%{text}',
+        textfont=dict(color='white', size=12),
+        hoverongaps=False
     ))
     
+    # Update layout with dark theme
     fig.update_layout(
-        title='Asset Correlation Matrix',
-        template='plotly_white',
+        title=dict(
+            text='Asset Correlation Matrix',
+            font=dict(size=20, color='white'),
+            x=0.5,
+            xanchor='center'
+        ),
+        xaxis=dict(
+            title='Assets',
+            titlefont=dict(color='white'),
+            tickfont=dict(color='white'),
+            gridcolor='rgba(255,255,255,0.1)',
+            zerolinecolor='rgba(255,255,255,0.2)',
+            side='bottom'
+        ),
+        yaxis=dict(
+            title='Assets',
+            titlefont=dict(color='white'),
+            tickfont=dict(color='white'),
+            gridcolor='rgba(255,255,255,0.1)',
+            zerolinecolor='rgba(255,255,255,0.2)',
+            side='left'
+        ),
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='white'),
+        margin=dict(l=80, r=80, t=80, b=80),
         width=700,
         height=600
     )
@@ -150,7 +275,7 @@ def create_performance_chart(portfolio_returns: pd.Series,
                            benchmark_returns: pd.Series = None,
                            title: str = 'Portfolio Performance') -> go.Figure:
     """
-    Create portfolio performance chart with cumulative returns.
+    Create portfolio performance chart with cumulative returns and modern styling.
     
     Args:
         portfolio_returns: Portfolio return series
@@ -165,13 +290,15 @@ def create_performance_chart(portfolio_returns: pd.Series,
     
     fig = go.Figure()
     
-    # Add portfolio performance
+    # Add portfolio performance with gradient fill
     fig.add_trace(go.Scatter(
         x=portfolio_cumulative.index,
         y=portfolio_cumulative.values,
         mode='lines',
         name='Portfolio',
-        line=dict(color='blue', width=2),
+        line=dict(color='#6366f1', width=3),
+        fill='tonexty',
+        fillcolor='rgba(99, 102, 241, 0.1)',
         hovertemplate='<b>Date:</b> %{x}<br>' +
                      '<b>Cumulative Return:</b> %{y:.3f}<br>' +
                      '<extra></extra>'
@@ -185,27 +312,53 @@ def create_performance_chart(portfolio_returns: pd.Series,
             y=benchmark_cumulative.values,
             mode='lines',
             name='Benchmark',
-            line=dict(color='red', width=2, dash='dash'),
+            line=dict(color='#ef4444', width=2, dash='dash'),
             hovertemplate='<b>Date:</b> %{x}<br>' +
                          '<b>Cumulative Return:</b> %{y:.3f}<br>' +
                          '<extra></extra>'
         ))
     
+    # Update layout with dark theme
     fig.update_layout(
-        title=title,
-        xaxis_title='Date',
-        yaxis_title='Cumulative Return',
-        template='plotly_white',
+        title=dict(
+            text=title,
+            font=dict(size=20, color='white'),
+            x=0.5,
+            xanchor='center'
+        ),
+        xaxis=dict(
+            title='Date',
+            titlefont=dict(color='white'),
+            tickfont=dict(color='white'),
+            gridcolor='rgba(255,255,255,0.1)',
+            zerolinecolor='rgba(255,255,255,0.2)'
+        ),
+        yaxis=dict(
+            title='Cumulative Return',
+            titlefont=dict(color='white'),
+            tickfont=dict(color='white'),
+            gridcolor='rgba(255,255,255,0.1)',
+            zerolinecolor='rgba(255,255,255,0.2)'
+        ),
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='white'),
+        margin=dict(l=80, r=80, t=80, b=80),
         width=900,
         height=500,
-        hovermode='x unified'
+        hovermode='x unified',
+        legend=dict(
+            font=dict(color='white'),
+            bgcolor='rgba(0,0,0,0)',
+            bordercolor='rgba(255,255,255,0.2)'
+        )
     )
     
     return fig
 
 def create_drawdown_chart(portfolio_returns: pd.Series) -> go.Figure:
     """
-    Create drawdown chart.
+    Create drawdown chart with modern styling.
     
     Args:
         portfolio_returns: Portfolio return series
@@ -229,22 +382,48 @@ def create_drawdown_chart(portfolio_returns: pd.Series) -> go.Figure:
         y=drawdown.values * 100,  # Convert to percentage
         mode='lines',
         fill='tonexty',
-        fillcolor='rgba(255, 0, 0, 0.3)',
-        line=dict(color='red', width=2),
+        fillcolor='rgba(239, 68, 68, 0.2)',
+        line=dict(color='#ef4444', width=3),
         name='Drawdown',
         hovertemplate='<b>Date:</b> %{x}<br>' +
                      '<b>Drawdown:</b> %{y:.2f}%<br>' +
                      '<extra></extra>'
     ))
     
+    # Update layout with dark theme
     fig.update_layout(
-        title='Portfolio Drawdown',
-        xaxis_title='Date',
-        yaxis_title='Drawdown (%)',
-        template='plotly_white',
+        title=dict(
+            text='Portfolio Drawdown',
+            font=dict(size=20, color='white'),
+            x=0.5,
+            xanchor='center'
+        ),
+        xaxis=dict(
+            title='Date',
+            titlefont=dict(color='white'),
+            tickfont=dict(color='white'),
+            gridcolor='rgba(255,255,255,0.1)',
+            zerolinecolor='rgba(255,255,255,0.2)'
+        ),
+        yaxis=dict(
+            title='Drawdown (%)',
+            titlefont=dict(color='white'),
+            tickfont=dict(color='white'),
+            gridcolor='rgba(255,255,255,0.1)',
+            zerolinecolor='rgba(255,255,255,0.2)',
+            range=[drawdown.min() * 100 * 1.1, 5]
+        ),
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='white'),
+        margin=dict(l=80, r=80, t=80, b=80),
         width=900,
         height=400,
-        yaxis=dict(range=[drawdown.min() * 100 * 1.1, 5])
+        legend=dict(
+            font=dict(color='white'),
+            bgcolor='rgba(0,0,0,0)',
+            bordercolor='rgba(255,255,255,0.2)'
+        )
     )
     
     return fig
@@ -348,8 +527,15 @@ def create_risk_metrics_dashboard(risk_metrics: Dict) -> go.Figure:
     ), row=2, col=2)
     
     fig.update_layout(
-        title='Portfolio Risk Metrics Dashboard',
-        template='plotly_white',
+        title=dict(
+            text='Portfolio Risk Metrics Dashboard',
+            font=dict(size=20, color='white'),
+            x=0.5,
+            xanchor='center'
+        ),
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='white'),
         width=1000,
         height=600
     )
@@ -378,7 +564,7 @@ def create_rolling_metrics_chart(rolling_data: pd.DataFrame) -> go.Figure:
         y=rolling_data['rolling_sharpe'],
         mode='lines',
         name='Rolling Sharpe',
-        line=dict(color='blue', width=2)
+        line=dict(color='#6366f1', width=3)
     ), row=1, col=1)
     
     # Rolling Volatility
@@ -387,25 +573,33 @@ def create_rolling_metrics_chart(rolling_data: pd.DataFrame) -> go.Figure:
         y=rolling_data['rolling_vol'] * 100,
         mode='lines',
         name='Rolling Volatility',
-        line=dict(color='red', width=2)
+        line=dict(color='#ef4444', width=3)
     ), row=2, col=1)
     
     fig.update_layout(
-        title='Rolling Portfolio Metrics',
-        template='plotly_white',
+        title=dict(
+            text='Rolling Portfolio Metrics',
+            font=dict(size=20, color='white'),
+            x=0.5,
+            xanchor='center'
+        ),
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='white'),
         width=900,
         height=600,
         showlegend=False
     )
     
-    fig.update_yaxes(title_text="Sharpe Ratio", row=1, col=1)
-    fig.update_yaxes(title_text="Volatility (%)", row=2, col=1)
+    fig.update_yaxes(title_text="Sharpe Ratio", row=1, col=1, titlefont=dict(color='white'), tickfont=dict(color='white'))
+    fig.update_yaxes(title_text="Volatility (%)", row=2, col=1, titlefont=dict(color='white'), tickfont=dict(color='white'))
+    fig.update_xaxes(titlefont=dict(color='white'), tickfont=dict(color='white'))
     
     return fig
 
 def create_asset_allocation_pie(weights: Dict[str, float]) -> go.Figure:
     """
-    Create asset allocation pie chart.
+    Create asset allocation pie chart with modern styling.
     
     Args:
         weights: Dictionary of asset weights
@@ -413,18 +607,34 @@ def create_asset_allocation_pie(weights: Dict[str, float]) -> go.Figure:
     Returns:
         Plotly figure object
     """
+    # Modern color palette
+    colors = ['#6366f1', '#8b5cf6', '#ec4899', '#ef4444', '#f97316', 
+              '#eab308', '#84cc16', '#22c55e', '#14b8a6', '#06b6d4']
+    
     fig = go.Figure(data=[go.Pie(
         labels=list(weights.keys()),
         values=list(weights.values()),
-        hole=0.3,
+        hole=0.4,
         textinfo='label+percent',
         textposition='inside',
-        marker=dict(colors=px.colors.qualitative.Set3)
+        textfont=dict(color='white', size=12),
+        marker=dict(colors=colors[:len(weights)]),
+        hovertemplate='<b>%{label}</b><br>' +
+                     '<b>Weight:</b> %{percent}<br>' +
+                     '<b>Value:</b> %{value:.3f}<br>' +
+                     '<extra></extra>'
     )])
     
     fig.update_layout(
-        title='Asset Allocation',
-        template='plotly_white',
+        title=dict(
+            text='Asset Allocation',
+            font=dict(size=20, color='white'),
+            x=0.5,
+            xanchor='center'
+        ),
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='white'),
         width=600,
         height=500
     )
@@ -457,7 +667,7 @@ def create_optimization_comparison_chart(optimization_results: Dict) -> go.Figur
         x=methods,
         y=returns,
         name='Expected Return',
-        marker_color='green'
+        marker_color='#10b981'
     ), row=1, col=1)
     
     # Volatilities
@@ -465,7 +675,7 @@ def create_optimization_comparison_chart(optimization_results: Dict) -> go.Figur
         x=methods,
         y=volatilities,
         name='Volatility',
-        marker_color='red'
+        marker_color='#ef4444'
     ), row=1, col=2)
     
     # Sharpe Ratios
@@ -473,15 +683,26 @@ def create_optimization_comparison_chart(optimization_results: Dict) -> go.Figur
         x=methods,
         y=sharpe_ratios,
         name='Sharpe Ratio',
-        marker_color='blue'
+        marker_color='#6366f1'
     ), row=1, col=3)
     
     fig.update_layout(
-        title='Optimization Methods Comparison',
-        template='plotly_white',
+        title=dict(
+            text='Optimization Methods Comparison',
+            font=dict(size=20, color='white'),
+            x=0.5,
+            xanchor='center'
+        ),
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='white'),
         width=1200,
         height=400,
         showlegend=False
     )
+    
+    # Update axes for dark theme
+    fig.update_xaxes(titlefont=dict(color='white'), tickfont=dict(color='white'))
+    fig.update_yaxes(titlefont=dict(color='white'), tickfont=dict(color='white'))
     
     return fig
